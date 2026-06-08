@@ -18,7 +18,11 @@ export function PageHeader({
 
 export function Card({ className, children, hover }: { className?: string; children: ReactNode; hover?: boolean }) {
   return (
-    <div className={cn("bg-card rounded-2xl shadow-card border border-border/60 p-5", hover && "hover-lift", className)}>
+    <div className={cn(
+      "bg-card rounded-2xl shadow-card border border-border/60 p-5 transition-all duration-300",
+      hover && "hover-lift hover:border-border",
+      className
+    )}>
       {children}
     </div>
   );
@@ -28,7 +32,7 @@ export function StaggerList({ children }: { children: ReactNode }) {
   return (
     <motion.div
       initial="hidden" animate="show"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } }}
       className="contents"
     >
       {children}
@@ -39,7 +43,10 @@ export function StaggerList({ children }: { children: ReactNode }) {
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
-      variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}
+      variants={{
+        hidden: { opacity: 0, y: 16, scale: 0.97 },
+        show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+      }}
       className={className}
     >
       {children}
@@ -48,7 +55,7 @@ export function StaggerItem({ children, className }: { children: ReactNode; clas
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-lg bg-muted/70", className)} />;
+  return <div className={cn("shimmer rounded-lg", className)} />;
 }
 
 export function EmptyState({ icon: Icon, title, description, action }: { icon?: any; title: string; description?: string; action?: ReactNode }) {

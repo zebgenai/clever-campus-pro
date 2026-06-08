@@ -19,30 +19,31 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-foreground/50 backdrop-blur-md"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className={`relative bg-card rounded-2xl shadow-lift border w-full ${widths[size]} max-h-[90vh] flex flex-col`}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className={`relative bg-card rounded-2xl shadow-lift border border-border/70 w-full ${widths[size]} max-h-[90vh] flex flex-col overflow-hidden`}
           >
-            <div className="flex items-start justify-between p-5 border-b">
-              <div>
-                <h3 className="text-lg font-semibold">{title}</h3>
-                {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
+            <div className="flex items-start justify-between p-5 sm:p-6 border-b border-border/70 bg-gradient-subtle">
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+                {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
               </div>
-              <button onClick={onClose} className="size-8 grid place-items-center rounded-lg hover:bg-muted">
+              <button onClick={onClose} className="size-9 grid place-items-center rounded-xl hover:bg-muted transition shrink-0" aria-label="Close">
                 <X className="size-4" />
               </button>
             </div>
-            <div className="p-5 overflow-y-auto flex-1">{children}</div>
-            {footer && <div className="p-4 border-t bg-muted/30 rounded-b-2xl flex justify-end gap-2">{footer}</div>}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1">{children}</div>
+            {footer && <div className="p-4 sm:px-6 border-t border-border/70 bg-muted/40 flex justify-end gap-2">{footer}</div>}
           </motion.div>
         </div>
       )}
