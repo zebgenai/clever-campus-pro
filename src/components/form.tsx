@@ -10,32 +10,32 @@ export const Field = ({ label, children, error, hint }: { label: string; childre
   </label>
 );
 
+const inputBase =
+  "w-full rounded-xl border border-input bg-card text-sm transition-all duration-200 " +
+  "placeholder:text-muted-foreground/60 " +
+  "hover:border-border " +
+  "focus:outline-none focus:border-ring focus:ring-4 focus:ring-ring/15 " +
+  "disabled:opacity-60 disabled:cursor-not-allowed";
+
 export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...p }, ref) => (
-    <input ref={ref} {...p} className={cn(
-      "w-full h-10 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition",
-      className
-    )} />
+    <input ref={ref} {...p} className={cn(inputBase, "h-11 px-3.5", className)} />
   )
 );
 TextInput.displayName = "TextInput";
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
   ({ className, ...p }, ref) => (
-    <textarea ref={ref} {...p} className={cn(
-      "w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition min-h-[80px]",
-      className
-    )} />
+    <textarea ref={ref} {...p} className={cn(inputBase, "px-3.5 py-2.5 min-h-[96px] resize-y", className)} />
   )
 );
 Textarea.displayName = "Textarea";
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...p }, ref) => (
-    <select ref={ref} {...p} className={cn(
-      "w-full h-10 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition",
-      className
-    )}>{children}</select>
+    <select ref={ref} {...p} className={cn(inputBase, "h-11 px-3.5 pr-9 appearance-none cursor-pointer", className)}>
+      {children}
+    </select>
   )
 );
 Select.displayName = "Select";
@@ -48,24 +48,32 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export const Button = forwardRef<HTMLButtonElement, BtnProps>(
   ({ variant = "primary", size = "md", loading, className, children, disabled, ...p }, ref) => {
     const variants = {
-      primary: "bg-gradient-primary text-primary-foreground hover:shadow-lift",
-      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      primary:
+        "bg-gradient-primary text-primary-foreground shadow-soft hover:shadow-glow " +
+        "before:absolute before:inset-0 before:rounded-[inherit] before:bg-gradient-to-b before:from-white/15 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
+      secondary: "bg-secondary text-secondary-foreground border border-border/70 hover:bg-secondary/70 hover:border-border",
       ghost: "hover:bg-muted text-foreground",
-      destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
-      outline: "border bg-card hover:bg-muted",
+      destructive: "bg-destructive text-destructive-foreground shadow-soft hover:opacity-95 hover:shadow-lift",
+      outline: "border border-border bg-card hover:bg-muted hover:border-border",
     };
-    const sizes = { sm: "h-8 px-3 text-xs", md: "h-10 px-4 text-sm", lg: "h-11 px-5 text-sm" };
+    const sizes = {
+      sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
+      md: "h-10 px-4 text-sm rounded-xl",
+      lg: "h-11 px-5 text-sm rounded-xl",
+    };
     return (
       <button
         ref={ref} disabled={disabled || loading}
         {...p}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed",
+          "relative inline-flex items-center justify-center gap-2 font-semibold tracking-[-0.005em] transition-all duration-200",
+          "active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden",
+          "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/30",
           variants[variant], sizes[size], className
         )}
       >
-        {loading && <span className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />}
-        {children}
+        {loading && <span className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin relative z-10" />}
+        <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
       </button>
     );
   }

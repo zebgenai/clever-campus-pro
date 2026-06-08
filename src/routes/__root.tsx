@@ -52,7 +52,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "School ERP — Premium School Management" },
       { name: "description", content: "A premium School ERP for managing students, attendance, fees, exams and more." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" },
+      { rel: "stylesheet", href: appCss },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
