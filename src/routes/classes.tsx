@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Plus, Edit2, Trash2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -11,43 +11,98 @@ import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/classes")({
   head: () => ({ meta: [{ title: "Classes — School ERP" }] }),
-  component: () => <AppShell><ClassesPage /></AppShell>,
+  component: () => (
+    <AppShell>
+      <ClassesPage />
+    </AppShell>
+  ),
 });
 
 type TabKey = "classes" | "sections" | "subjects";
 
+type FieldConfig = {
+  name: string;
+  label: string;
+  type?: "class";
+};
+
 function ClassesPage() {
   const [tab, setTab] = useState<TabKey>("classes");
+
   return (
     <div>
-      <PageHeader title="Classes & Curriculum" description="Manage classes, sections and subjects offered by your school." />
+      <PageHeader
+        title="Classes & Curriculum"
+        description="Manage classes, sections and subjects offered by your school."
+      />
 
       <div className="inline-flex gap-1 p-1 bg-muted rounded-xl mb-4">
         {(["classes", "sections", "subjects"] as TabKey[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition ${tab === t ? "bg-card shadow-soft" : "text-muted-foreground hover:text-foreground"}`}>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition ${
+              tab === t
+                ? "bg-card shadow-soft"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
             {t}
           </button>
         ))}
       </div>
 
-      {tab === "classes" && <CrudTable endpoint="/classes" title="Class" fields={[{ name: "name", label: "Class Name" }, { name: "description", label: "Description" }]} />}
-      {tab === "sections" && (
-        <CrudTable endpoint="/sections" title="Section"
-          fields={[{ name: "name", label: "Section Name" }, { name: "classId", label: "Class", type: "class" }]} />
+      {tab === "classes" && (
+        <CrudTable
+          endpoint="/classes"
+          title="Class"
+          fields={[{ name: "name", label: "Class Name" }]}
+        />
       )}
+
+      {tab === "sections" && (
+        <CrudTable
+          endpoint="/sections"
+          title="Section"
+          fields={[
+            { name: "name", label: "Section Name" },
+            { name: "classId", label: "Class", type: "class" },
+          ]}
+        />
+      )}
+
       {tab === "subjects" && (
-        <CrudTable endpoint="/subjects" title="Subject"
-          fields={[{ name: "name", label: "Subject Name" }, { name: "code", label: "Code" }, { name: "classId", label: "Class", type: "class" }]} />
+        <CrudTable
+          endpoint="/subjects"
+          title="Subject"
+          fields={[
+            { name: "name", label: "Subject Name" },
+            { name: "code", label: "Code" },
+            { name: "classId", label: "Class", type: "class" },
+          ]}
+        />
       )}
     </div>
   );
 }
 
-function CrudTable({ endpoint, title, fields }: { endpoint: string; title: string; fields: { name: string; label: string; type?: "class" }[] }) {
+function CrudTable({
+  endpoint,
+  title,
+  fields,
+}: {
+  endpoint: string;
+  title: string;
+  fields: FieldConfig[];
+}) {
   const list = useApiQuery<any>(endpoint);
   const classes = useApiQuery<any>("/classes");
-  const [modal, setModal] = useState<{ open: boolean; data: any | null }>({ open: false, data: null });
+
+  const [modal, setModal] = useState<{ open: boolean; data: any | null }>({
+    open: false,
+    data: null,
+  });
+
   const [del, setDel] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -56,67 +111,177 @@ function CrudTable({ endpoint, title, fields }: { endpoint: string; title: strin
   const [form, setForm] = useState<any>(empty);
 
   const open = (row: any | null) => {
-    setForm(row ? { ...empty, ...row } : empty);
+    const cleanForm = { ...empty };
+
+    if (row) {
+      for (const field of fields) {
+        cleanForm[field.name] = row[field.name] ?? "";
+      }
+    }
+
+    setForm(cleanForm);
     setModal({ open: true, data: row });
   };
 
-  const save = async (e: React.FormEvent) => {
+  const closeModal = () => {
+    setModal({ open: false, data: null });
+    setForm(empty);
+  };
+
+  const buildPayload = () => {
+    if (endpoint === "/classes") {
+      return {
+        name: form.name?.trim(),
+      };
+    }
+
+    if (endpoint === "/sections") {
+      return {
+        name: form.name?.trim(),
+        classId: form.classId || undefined,
+      };
+    }
+
+    if (endpoint === "/subjects") {
+      return {
+        name: form.name?.trim(),
+        code: form.code?.trim() || undefined,
+        classId: form.classId || undefined,
+      };
+    }
+
+    return {};
+  };
+
+  const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.name?.trim()) return toast.error("Name is required");
+
+    if (!form.name?.trim()) {
+      return toast.error("Name is required");
+    }
+
+    if (endpoint === "/sections" && !form.classId) {
+      return toast.error("Class is required");
+    }
+
     setSaving(true);
+
     try {
+      const payload = buildPayload();
+
       if (modal.data?.id) {
-        await api.patch(`${endpoint}/${modal.data.id}`, form);
+        await api.patch(`${endpoint}/${modal.data.id}`, payload);
         toast.success(`${title} updated`);
       } else {
-        await api.post(endpoint, form);
+        await api.post(endpoint, payload);
         toast.success(`${title} added`);
       }
-      setModal({ open: false, data: null });
+
+      closeModal();
       list.refetch();
-    } catch (e: any) { toast.error(e.message || "Save failed"); }
-    finally { setSaving(false); }
+
+      if (endpoint === "/classes") {
+        classes.refetch();
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async () => {
     if (!del) return;
+
     setDeleting(true);
+
     try {
       await api.delete(`${endpoint}/${del.id}`);
       toast.success(`${title} deleted`);
-      setDel(null); list.refetch();
-    } catch (e: any) { toast.error(e.message); }
-    finally { setDeleting(false); }
+      setDel(null);
+      list.refetch();
+
+      if (endpoint === "/classes") {
+        classes.refetch();
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const rows = asList<any>(list.data);
+  const classRows = asList<any>(classes.data);
 
   return (
     <Card className="p-0 overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="font-semibold">{title}s</div>
-        <Button size="sm" onClick={() => open(null)}><Plus className="size-4" /> Add {title}</Button>
+        <Button size="sm" onClick={() => open(null)}>
+          <Plus className="size-4" />
+          Add {title}
+        </Button>
       </div>
-      {list.loading ? <div className="p-6 space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div> :
-        rows.length === 0 ? <EmptyState icon={GraduationCap} title={`No ${title.toLowerCase()}s yet`} /> : (
+
+      {list.loading ? (
+        <div className="p-6 space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={GraduationCap}
+          title={`No ${title.toLowerCase()}s yet`}
+        />
+      ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left"><tr>
-              {fields.map((f) => <th key={f.name} className="px-4 py-3 font-medium text-muted-foreground">{f.label}</th>)}
-              <th></th>
-            </tr></thead>
+            <thead className="bg-muted/40 text-left">
+              <tr>
+                {fields.map((f) => (
+                  <th
+                    key={f.name}
+                    className="px-4 py-3 font-medium text-muted-foreground"
+                  >
+                    {f.label}
+                  </th>
+                ))}
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-muted/30">
                   {fields.map((f) => (
                     <td key={f.name} className="px-4 py-3">
-                      {f.type === "class" ? (asList<any>(classes.data).find((c) => c.id === r[f.name])?.name || r.class?.name || "—") : (r[f.name] || "—")}
+                      {f.type === "class"
+                        ? classRows.find((c) => c.id === r[f.name])?.name ||
+                          r.class?.name ||
+                          "—"
+                        : r[f.name] || "—"}
                     </td>
                   ))}
+
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => open(r)} className="size-8 grid place-items-center rounded-lg hover:bg-muted"><Edit2 className="size-4" /></button>
-                      <button onClick={() => setDel(r)} className="size-8 grid place-items-center rounded-lg hover:bg-destructive/10 hover:text-destructive"><Trash2 className="size-4" /></button>
+                      <button
+                        onClick={() => open(r)}
+                        className="size-8 grid place-items-center rounded-lg hover:bg-muted"
+                        title={`Edit ${title}`}
+                      >
+                        <Edit2 className="size-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setDel(r)}
+                        className="size-8 grid place-items-center rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                        title={`Delete ${title}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -126,30 +291,59 @@ function CrudTable({ endpoint, title, fields }: { endpoint: string; title: strin
         </div>
       )}
 
-      <Modal open={modal.open} onClose={() => setModal({ open: false, data: null })}
+      <Modal
+        open={modal.open}
+        onClose={closeModal}
         title={`${modal.data ? "Edit" : "Add"} ${title}`}
-        footer={<>
-          <Button variant="outline" onClick={() => setModal({ open: false, data: null })}>Cancel</Button>
-          <Button onClick={save as any} loading={saving}>{modal.data ? "Save" : "Add"}</Button>
-        </>}>
+        footer={
+          <>
+            <Button variant="outline" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button onClick={save as any} loading={saving}>
+              {modal.data ? "Save" : "Add"}
+            </Button>
+          </>
+        }
+      >
         <form onSubmit={save} className="space-y-4">
           {fields.map((f) => (
             <Field key={f.name} label={f.label}>
               {f.type === "class" ? (
-                <Select value={form[f.name] || ""} onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}>
+                <Select
+                  value={form[f.name] ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, [f.name]: e.target.value })
+                  }
+                >
                   <option value="">Select class</option>
-                  {asList<any>(classes.data).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {classRows.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
                 </Select>
               ) : (
-                <TextInput value={form[f.name] || ""} onChange={(e) => setForm({ ...form, [f.name]: e.target.value })} />
+                <TextInput
+                  value={form[f.name] ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, [f.name]: e.target.value })
+                  }
+                />
               )}
             </Field>
           ))}
         </form>
       </Modal>
 
-      <ConfirmDialog open={!!del} onClose={() => setDel(null)} onConfirm={remove} loading={deleting}
-        title={`Delete ${title.toLowerCase()}?`} message="This action cannot be undone." />
+      <ConfirmDialog
+        open={!!del}
+        onClose={() => setDel(null)}
+        onConfirm={remove}
+        loading={deleting}
+        title={`Delete ${title.toLowerCase()}?`}
+        message="This action cannot be undone."
+      />
     </Card>
   );
 }
