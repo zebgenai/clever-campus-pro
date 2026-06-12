@@ -7,6 +7,7 @@ import { Card, PageHeader, Skeleton, EmptyState, StatusBadge } from "@/component
 import { Button, Select } from "@/components/form";
 import { useApiQuery, asList } from "@/lib/hooks";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/attendance")({
