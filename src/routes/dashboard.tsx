@@ -27,13 +27,14 @@ function Dashboard() {
   const exams = useApiQuery<any>("/reports/upcoming-exams");
 
   const s = asObj<any>(summary.data);
+  const numOrDash = (v: any) => (v === 0 ? 0 : (v ?? "—"));
   const cards = [
-    { label: "Total Students", value: s.totalStudents ?? s.students ?? "—", icon: Users, tone: "from-blue-500/15 to-blue-500/5", color: "text-blue-600" },
-    { label: "Present Today", value: s.presentToday ?? "—", icon: UserCheck, tone: "from-emerald-500/15 to-emerald-500/5", color: "text-emerald-600" },
-    { label: "Absent Today", value: s.absentToday ?? "—", icon: UserX, tone: "from-rose-500/15 to-rose-500/5", color: "text-rose-600" },
-    { label: "Pending Fees", value: formatMoney(s.pendingFees), icon: Wallet, tone: "from-amber-500/15 to-amber-500/5", color: "text-amber-600" },
-    { label: "Fees Collected", value: formatMoney(s.feesCollected ?? s.collected), icon: TrendingUp, tone: "from-violet-500/15 to-violet-500/5", color: "text-violet-600" },
-    { label: "Upcoming Exams", value: s.upcomingExams ?? "—", icon: ClipboardList, tone: "from-cyan-500/15 to-cyan-500/5", color: "text-cyan-600" },
+    { label: "Total Students", value: numOrDash(s.totalStudents ?? s.activeStudents ?? 0), icon: Users, tone: "from-blue-500/15 to-blue-500/5", color: "text-blue-600" },
+    { label: "Present Today", value: numOrDash(s.todayAttendance?.present ?? s.presentToday ?? 0), icon: UserCheck, tone: "from-emerald-500/15 to-emerald-500/5", color: "text-emerald-600" },
+    { label: "Absent Today", value: numOrDash(s.todayAttendance?.absent ?? s.absentToday ?? 0), icon: UserX, tone: "from-rose-500/15 to-rose-500/5", color: "text-rose-600" },
+    { label: "Pending Fees", value: formatMoney(s.fees?.totalPending ?? s.pendingFees ?? 0), icon: Wallet, tone: "from-amber-500/15 to-amber-500/5", color: "text-amber-600" },
+    { label: "Fees Collected", value: formatMoney(s.fees?.totalPaid ?? s.feesCollected ?? 0), icon: TrendingUp, tone: "from-violet-500/15 to-violet-500/5", color: "text-violet-600" },
+    { label: "Upcoming Exams", value: numOrDash(s.exams?.upcomingExams ?? s.upcomingExams ?? 0), icon: ClipboardList, tone: "from-cyan-500/15 to-cyan-500/5", color: "text-cyan-600" },
   ];
 
   const quickActions = [
