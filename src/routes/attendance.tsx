@@ -51,8 +51,19 @@ function AttendancePage() {
     if (!classId) return toast.error("Select a class");
     setSaving(true);
     try {
-      const records = studentList.map((st) => ({ studentId: st.id, status: marks[st.id] || "PRESENT" }));
-      await api.post("/attendance/bulk", { date, classId, sectionId: sectionId || undefined, records });
+      const isSuper = (user?.role || "").toUpperCase() === "SUPER_ADMIN";
+      const schoolId = (user as any)?.schoolId || user?.school?.id;
+      const records = studentList.map((st) => {
+        const payload: any = {
+          studentId: st.id,
+          date,
+          status: marks[st.id] || "PRESENT",
+          remarks: "",
+        };
+        if (isSuper && schoolId) payload.schoolId = schoolId;
+        return payload;
+      });
+      await api.post("/attendance/bulk", { records });
       toast.success("Attendance saved");
       existing.refetch(); summary.refetch();
     } catch (e: any) { toast.error(e.message); }
