@@ -111,25 +111,32 @@ function InvoicesTab() {
               <th className="px-4 py-3 font-medium text-muted-foreground">Invoice</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Student</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Month</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Amount</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Total</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Paid</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Pending</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3"></th>
             </tr></thead>
             <tbody>
-              {rows.map((i) => (
-                <tr key={i.id} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-3 font-mono text-xs">{i.invoiceNo || i.id?.slice(0, 8)}</td>
-                  <td className="px-4 py-3 font-medium">{i.student?.fullName || i.studentName}</td>
-                  <td className="px-4 py-3">{i.month}</td>
-                  <td className="px-4 py-3">{i.amount}</td>
-                  <td className="px-4 py-3">{i.paid ?? 0}</td>
-                  <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
-                  <td className="px-4 py-3 text-right">
-                    {i.status !== "PAID" && <Button size="sm" variant="outline" onClick={() => setPay(i)}>Record Payment</Button>}
-                  </td>
-                </tr>
-              ))}
+              {rows.map((i) => {
+                const total = Number(i.totalAmount ?? i.amount ?? 0);
+                const paid = Number(i.paidAmount ?? i.paid ?? 0);
+                const pending = i.pendingAmount != null ? Number(i.pendingAmount) : Math.max(total - paid, 0);
+                return (
+                  <tr key={i.id} className="border-t hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs">{i.invoiceNo || i.id?.slice(0, 8)}</td>
+                    <td className="px-4 py-3 font-medium">{i.student?.fullName || i.studentName}</td>
+                    <td className="px-4 py-3">{i.month}</td>
+                    <td className="px-4 py-3">{total}</td>
+                    <td className="px-4 py-3">{paid}</td>
+                    <td className="px-4 py-3">{pending}</td>
+                    <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
+                    <td className="px-4 py-3 text-right">
+                      {i.status !== "PAID" && <Button size="sm" variant="outline" onClick={() => setPay(i)}>Record Payment</Button>}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
