@@ -49,12 +49,16 @@ async function request<T = any>(
     if (s) url += `?${s}`;
   }
 
+  const cleanedBody = method !== "GET" && body && typeof body === "object" && !Array.isArray(body)
+    ? sanitizePayload(body)
+    : body;
+
   let res: Response;
   try {
     res = await fetch(url, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: cleanedBody !== undefined ? JSON.stringify(cleanedBody) : undefined,
     });
   } catch (e: any) {
     throw new ApiError(e?.message || "Network error", 0);
