@@ -160,7 +160,10 @@ function GenerateModal({ open, onClose, onGenerate, loading }: any) {
 }
 
 function PaymentModal({ invoice, onClose, onSave, loading }: any) {
-  const [form, setForm] = useState({ amount: invoice.amount - (invoice.paid || 0), method: "CASH", note: "" });
+  const total = Number(invoice.totalAmount ?? invoice.amount ?? 0);
+  const paid = Number(invoice.paidAmount ?? invoice.paid ?? 0);
+  const pending = invoice.pendingAmount != null ? Number(invoice.pendingAmount) : Math.max(total - paid, 0);
+  const [form, setForm] = useState({ amount: pending, method: "CASH", note: "" });
   return (
     <Modal open onClose={onClose} title={`Record Payment · ${invoice.student?.fullName || ""}`}
       footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button loading={loading} onClick={() => onSave(form)}>Save Payment</Button></>}>
@@ -168,9 +171,9 @@ function PaymentModal({ invoice, onClose, onSave, loading }: any) {
         <div className="text-xs text-muted-foreground">Receipt preview</div>
         <div className="font-semibold mt-1">{invoice.student?.fullName}</div>
         <div className="text-sm text-muted-foreground">Invoice {invoice.invoiceNo || invoice.id} · {invoice.month}</div>
-        <div className="mt-2 flex justify-between text-sm"><span>Total</span><span>{invoice.amount}</span></div>
-        <div className="flex justify-between text-sm"><span>Paid</span><span>{invoice.paid ?? 0}</span></div>
-        <div className="flex justify-between font-semibold mt-1"><span>Due</span><span>{invoice.amount - (invoice.paid || 0)}</span></div>
+        <div className="mt-2 flex justify-between text-sm"><span>Total</span><span>{total}</span></div>
+        <div className="flex justify-between text-sm"><span>Paid</span><span>{paid}</span></div>
+        <div className="flex justify-between font-semibold mt-1"><span>Pending</span><span>{pending}</span></div>
       </div>
       <div className="space-y-3">
         <Field label="Amount"><TextInput type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} /></Field>
