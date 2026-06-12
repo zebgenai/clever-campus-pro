@@ -26,6 +26,22 @@ export function setUnauthorizedHandler(fn: () => void) {
   onUnauthorized = fn;
 }
 
+const STRIP_FIELDS = new Set([
+  "id", "createdAt", "updatedAt", "createdBy", "updatedBy",
+  "student", "class", "section", "school", "payments", "invoice",
+  "_id", "__v",
+]);
+
+export function sanitizePayload<T extends Record<string, any>>(obj: T): Partial<T> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (STRIP_FIELDS.has(k)) continue;
+    if (v === undefined) continue;
+    out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
 async function request<T = any>(
   method: Method,
   path: string,
