@@ -78,7 +78,13 @@ function InvoicesTab() {
   const recordPay = async (form: any) => {
     setBusy(true);
     try {
-      await api.post("/fees/payments", { invoiceId: pay.id, amount: Number(form.amount), method: form.method, note: form.note });
+      await api.post("/fees/payments", {
+        invoiceId: pay.id,
+        amount: Number(form.amount),
+        method: form.method,
+        note: form.note,
+        notes: form.note,
+      });
       toast.success("Payment recorded");
       setPay(null); list.refetch();
     } catch (e: any) { toast.error(e.message); }
