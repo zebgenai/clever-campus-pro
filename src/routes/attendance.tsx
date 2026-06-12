@@ -19,6 +19,7 @@ const STATUSES = ["PRESENT", "ABSENT", "LEAVE", "LATE"] as const;
 type S = typeof STATUSES[number];
 
 function AttendancePage() {
+  const { user } = useAuth();
   const classes = useApiQuery<any>("/classes");
   const sections = useApiQuery<any>("/sections");
   const [classId, setClassId] = useState("");
