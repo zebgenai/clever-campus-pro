@@ -26,6 +26,22 @@ export function setUnauthorizedHandler(fn: () => void) {
   onUnauthorized = fn;
 }
 
+const STRIP_FIELDS = new Set([
+  "id", "createdAt", "updatedAt", "createdBy", "updatedBy",
+  "student", "class", "section", "school", "payments", "invoice",
+  "_id", "__v",
+]);
+
+export function sanitizePayload<T extends Record<string, any>>(obj: T): Partial<T> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (STRIP_FIELDS.has(k)) continue;
+    if (v === undefined) continue;
+    out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
 async function request<T = any>(
   method: Method,
   path: string,
@@ -49,12 +65,16 @@ async function request<T = any>(
     if (s) url += `?${s}`;
   }
 
+  const cleanedBody = method !== "GET" && body && typeof body === "object" && !Array.isArray(body)
+    ? sanitizePayload(body)
+    : body;
+
   let res: Response;
   try {
     res = await fetch(url, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: cleanedBody !== undefined ? JSON.stringify(cleanedBody) : undefined,
     });
   } catch (e: any) {
     throw new ApiError(e?.message || "Network error", 0);
@@ -70,8 +90,10 @@ async function request<T = any>(
   const data = ct.includes("application/json") ? await res.json().catch(() => null) : await res.text().catch(() => null);
 
   if (!res.ok) {
-    const msg = (data && (data.message || data.error)) || `Request failed (${res.status})`;
-    throw new ApiError(typeof msg === "string" ? msg : JSON.stringify(msg), res.status, data);
+    let msg: any = (data && (data.message || data.error)) || `Request failed (${res.status})`;
+    if (Array.isArray(msg)) msg = msg.join(", ");
+    else if (typeof msg !== "string") msg = JSON.stringify(msg);
+    throw new ApiError(msg, res.status, data);
   }
   return data as T;
 }

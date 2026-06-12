@@ -78,7 +78,13 @@ function InvoicesTab() {
   const recordPay = async (form: any) => {
     setBusy(true);
     try {
-      await api.post("/fees/payments", { invoiceId: pay.id, amount: Number(form.amount), method: form.method, note: form.note });
+      await api.post("/fees/payments", {
+        invoiceId: pay.id,
+        amount: Number(form.amount),
+        method: form.method,
+        note: form.note,
+        notes: form.note,
+      });
       toast.success("Payment recorded");
       setPay(null); list.refetch();
     } catch (e: any) { toast.error(e.message); }
@@ -105,25 +111,32 @@ function InvoicesTab() {
               <th className="px-4 py-3 font-medium text-muted-foreground">Invoice</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Student</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Month</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Amount</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Total</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Paid</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Pending</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3"></th>
             </tr></thead>
             <tbody>
-              {rows.map((i) => (
-                <tr key={i.id} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-3 font-mono text-xs">{i.invoiceNo || i.id?.slice(0, 8)}</td>
-                  <td className="px-4 py-3 font-medium">{i.student?.fullName || i.studentName}</td>
-                  <td className="px-4 py-3">{i.month}</td>
-                  <td className="px-4 py-3">{i.amount}</td>
-                  <td className="px-4 py-3">{i.paid ?? 0}</td>
-                  <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
-                  <td className="px-4 py-3 text-right">
-                    {i.status !== "PAID" && <Button size="sm" variant="outline" onClick={() => setPay(i)}>Record Payment</Button>}
-                  </td>
-                </tr>
-              ))}
+              {rows.map((i) => {
+                const total = Number(i.totalAmount ?? i.amount ?? 0);
+                const paid = Number(i.paidAmount ?? i.paid ?? 0);
+                const pending = i.pendingAmount != null ? Number(i.pendingAmount) : Math.max(total - paid, 0);
+                return (
+                  <tr key={i.id} className="border-t hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs">{i.invoiceNo || i.id?.slice(0, 8)}</td>
+                    <td className="px-4 py-3 font-medium">{i.student?.fullName || i.studentName}</td>
+                    <td className="px-4 py-3">{i.month}</td>
+                    <td className="px-4 py-3">{total}</td>
+                    <td className="px-4 py-3">{paid}</td>
+                    <td className="px-4 py-3">{pending}</td>
+                    <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
+                    <td className="px-4 py-3 text-right">
+                      {i.status !== "PAID" && <Button size="sm" variant="outline" onClick={() => setPay(i)}>Record Payment</Button>}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -147,7 +160,10 @@ function GenerateModal({ open, onClose, onGenerate, loading }: any) {
 }
 
 function PaymentModal({ invoice, onClose, onSave, loading }: any) {
-  const [form, setForm] = useState({ amount: invoice.amount - (invoice.paid || 0), method: "CASH", note: "" });
+  const total = Number(invoice.totalAmount ?? invoice.amount ?? 0);
+  const paid = Number(invoice.paidAmount ?? invoice.paid ?? 0);
+  const pending = invoice.pendingAmount != null ? Number(invoice.pendingAmount) : Math.max(total - paid, 0);
+  const [form, setForm] = useState({ amount: pending, method: "CASH", note: "" });
   return (
     <Modal open onClose={onClose} title={`Record Payment · ${invoice.student?.fullName || ""}`}
       footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button loading={loading} onClick={() => onSave(form)}>Save Payment</Button></>}>
@@ -155,9 +171,9 @@ function PaymentModal({ invoice, onClose, onSave, loading }: any) {
         <div className="text-xs text-muted-foreground">Receipt preview</div>
         <div className="font-semibold mt-1">{invoice.student?.fullName}</div>
         <div className="text-sm text-muted-foreground">Invoice {invoice.invoiceNo || invoice.id} · {invoice.month}</div>
-        <div className="mt-2 flex justify-between text-sm"><span>Total</span><span>{invoice.amount}</span></div>
-        <div className="flex justify-between text-sm"><span>Paid</span><span>{invoice.paid ?? 0}</span></div>
-        <div className="flex justify-between font-semibold mt-1"><span>Due</span><span>{invoice.amount - (invoice.paid || 0)}</span></div>
+        <div className="mt-2 flex justify-between text-sm"><span>Total</span><span>{total}</span></div>
+        <div className="flex justify-between text-sm"><span>Paid</span><span>{paid}</span></div>
+        <div className="flex justify-between font-semibold mt-1"><span>Pending</span><span>{pending}</span></div>
       </div>
       <div className="space-y-3">
         <Field label="Amount"><TextInput type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} /></Field>
