@@ -70,8 +70,10 @@ async function request<T = any>(
   const data = ct.includes("application/json") ? await res.json().catch(() => null) : await res.text().catch(() => null);
 
   if (!res.ok) {
-    const msg = (data && (data.message || data.error)) || `Request failed (${res.status})`;
-    throw new ApiError(typeof msg === "string" ? msg : JSON.stringify(msg), res.status, data);
+    let msg: any = (data && (data.message || data.error)) || `Request failed (${res.status})`;
+    if (Array.isArray(msg)) msg = msg.join(", ");
+    else if (typeof msg !== "string") msg = JSON.stringify(msg);
+    throw new ApiError(msg, res.status, data);
   }
   return data as T;
 }
